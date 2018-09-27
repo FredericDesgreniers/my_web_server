@@ -9,21 +9,29 @@ extern crate pool;
 #[macro_use]
 extern crate lazy_static;
 extern crate minify;
-
-lazy_static! {
-    pub static ref landing_page: String = {
-        let content = include_str!("../../static/landing_page.html");
-        minify::html::minify(content)
-    };
-}
+extern crate flate2;
 
 use failure::Error;
+
 use http::RequestBuilder;
 use http::RequestType;
 use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use std::net::TcpStream;
+use flate2::Compression;
+use flate2::write::GzEncoder;
+
+lazy_static! {
+    pub static ref landing_page: Vec<u8> = {
+        let content = include_str!("../../static/landing_page.html");
+        let minified_content = minify::html::minify(content);
+
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(minified_content.as_bytes()).unwrap();
+        encoder.finish().unwrap()
+    };
+}
 
 pub struct HttpServer {
     listener: TcpListener,
@@ -113,8 +121,8 @@ impl HttpServer {
         //TODO remove hard-coded thing and move them to the api
         //TODO Once more pages are created, a way to specify different pages should be available
 
-        stream.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nConnection: close\r\n\r\n")?;
-        stream.write(landing_page.as_bytes())?;
+        stream.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
+        stream.write(&landing_page)?;
         stream.write(b"\r\n")?;
         Ok(())
     }
