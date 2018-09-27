@@ -113,7 +113,7 @@ impl HttpServer {
         //TODO remove hard-coded thing and move them to the api
         //TODO Once more pages are created, a way to specify different pages should be available
 
-        stream.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nConnection: close\r\n\r\n")?;
+        stream.write(b"HTTP/2.0 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nConnection: close\r\n\r\n")?;
         stream.write(landing_page.as_bytes())?;
         stream.write(b"\r\n")?;
         Ok(())
