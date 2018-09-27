@@ -6,6 +6,17 @@ extern crate failure;
 extern crate core;
 extern crate pool;
 
+#[macro_use]
+extern crate lazy_static;
+extern crate minify;
+
+lazy_static! {
+    pub static ref landing_page: String = {
+        let content = include_str!("../../static/landing_page.html");
+        minify::html::minify(content)
+    };
+}
+
 use failure::Error;
 use http::RequestBuilder;
 use http::RequestType;
@@ -101,10 +112,9 @@ impl HttpServer {
 
         //TODO remove hard-coded thing and move them to the api
         //TODO Once more pages are created, a way to specify different pages should be available
-        let content = include_str!("../../static/landing_page.html");
 
         stream.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nConnection: close\r\n\r\n")?;
-        stream.write(content.as_bytes())?;
+        stream.write(landing_page.as_bytes())?;
         stream.write(b"\r\n")?;
         Ok(())
     }
