@@ -1,0 +1,10 @@
+[package]
+name = "milton"
+version = "0.1.0"
+authors = ["Frederic Desgreniers <fredericdesgreniers@gmail.com>"]
+edition = "2018"
+[workspace]
+members = ["http", "http_server", "pool"]
+[dependencies]
+http = {path = "http"}
+http_server = {path = "http_server"}

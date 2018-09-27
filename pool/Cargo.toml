@@ -1,0 +1,8 @@
+[package]
+name = "pool"
+version = "0.1.0"
+authors = ["Frederic Desgreniers <fredericdesgreniers@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+crossbeam = "0.4.1"

@@ -1,0 +1,10 @@
+[package]
+name = "http_server"
+version = "0.1.0"
+authors = ["Frederic Desgreniers <fredericdesgreniers@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+http = {path = "../http"}
+failure = "0.1.2"
+pool = {path = "../pool"}
