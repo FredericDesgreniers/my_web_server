@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Frederic Desgreniers</title>
 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <style type="text/css">
         html, body {
             width: 100%;
@@ -46,11 +48,22 @@
             font-size: 5em;
             margin: 0;
             padding: 0;
+            width: 100%;
+            text-align: center;
         }
 
         .card .small_link {
             font-size: 1em;
             font-weight: lighter;
+        }
+
+        @Media(max-width: 800px) {
+            .card {
+                max-width: 100%;
+                width: 100%;
+                border: none;
+                padding: 0em;
+            }
         }
     </style>
 </head>
