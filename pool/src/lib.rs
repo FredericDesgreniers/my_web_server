@@ -1,6 +1,3 @@
-extern crate core;
-extern crate crossbeam;
-
 use core::marker::PhantomData;
 use crossbeam as channel;
 use std::thread;

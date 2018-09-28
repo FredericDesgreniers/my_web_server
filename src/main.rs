@@ -1,10 +1,5 @@
 #![feature(nll)]
 
-extern crate chrono;
-extern crate core;
-extern crate http;
-extern crate http_server;
-
 #[macro_use]
 extern crate log;
 

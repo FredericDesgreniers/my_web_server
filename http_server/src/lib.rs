@@ -1,26 +1,17 @@
 #![feature(try_from)]
 
-extern crate http;
 #[macro_use]
 extern crate failure;
-extern crate core;
-extern crate pool;
 
 #[macro_use]
 extern crate lazy_static;
-extern crate flate2;
-extern crate minify;
-
-use failure::Error;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use http::RequestBuilder;
-use http::RequestType;
+use http::{RequestBuilder, RequestType};
 use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
-use std::net::TcpListener;
-use std::net::TcpStream;
+use std::net::{TcpListener, TcpStream};
 
 lazy_static! {
     pub static ref landing_page: Vec<u8> = {
@@ -56,14 +47,14 @@ impl From<std::io::Error> for HttpServerError {
 impl HttpServer {
     /// Create an http server on the specified port
     /// `valid` valid port. Should be 80 for http
-    pub fn create(port: usize) -> Result<Self, Error> {
+    pub fn create(port: usize) -> Result<Self, HttpServerError> {
         Ok(Self {
             listener: TcpListener::bind(&format!("0.0.0.0:{}", port))?,
         })
     }
 
     /// Listen and respond to incoming http requests
-    pub fn listen(&mut self) -> Result<(), Error> {
+    pub fn listen(&mut self) -> Result<(), HttpServerError> {
         let workers = pool::ThreadPool::new(10);
 
         for stream in self.listener.incoming() {

@@ -1,11 +1,8 @@
 #![feature(try_from)]
 
-extern crate core;
-
 use core::convert::TryFrom;
 use std::collections::HashMap;
-use std::fmt;
-use std::fmt::Display;
+use std::fmt::{self, Display};
 
 #[derive(Default, Debug)]
 pub struct Headers {
