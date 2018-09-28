@@ -8,3 +8,5 @@ members = ["http", "http_server", "pool"]
 [dependencies]
 http = {path = "http"}
 http_server = {path = "http_server"}
+chrono = "0.4.6"
+log = "0.4.5"

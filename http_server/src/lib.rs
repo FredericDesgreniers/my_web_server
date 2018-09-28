@@ -8,19 +8,19 @@ extern crate pool;
 
 #[macro_use]
 extern crate lazy_static;
-extern crate minify;
 extern crate flate2;
+extern crate minify;
 
 use failure::Error;
 
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use http::RequestBuilder;
 use http::RequestType;
 use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use std::net::TcpStream;
-use flate2::Compression;
-use flate2::write::GzEncoder;
 
 lazy_static! {
     pub static ref landing_page: Vec<u8> = {
@@ -101,7 +101,7 @@ impl HttpServer {
         loop {
             buffered_stream.read_line(&mut line)?;
 
-            if line.trim().len() == 0 {
+            if line.trim().is_empty() {
                 break;
             }
 

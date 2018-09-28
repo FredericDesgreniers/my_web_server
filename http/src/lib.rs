@@ -102,17 +102,12 @@ impl Response {
     }
 }
 
+#[derive(Default)]
 pub struct ResponseBuilder {
     response: Response,
 }
 
 impl ResponseBuilder {
-    pub fn new() -> Self {
-        Self {
-            response: Response::default(),
-        }
-    }
-
     pub fn header(&mut self, name: &str, value: &str) -> &mut Self {
         self.response
             .headers
