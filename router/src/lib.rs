@@ -1,3 +1,4 @@
+use smallvec::SmallVec;
 use std::fmt::Debug;
 
 pub trait Endpoint: Debug {
@@ -9,18 +10,18 @@ pub trait Endpoint: Debug {
 
     //TODO Maybe change `path_overload` to provide a string(s) instead of `&[Vec<u8>]`
     // The reason this provides a `&[Vec<u8>]` instead of either a `&[String]` or `String` is to minimize overhead when calling. However, it can be argued that any endpoint that wants this will want it as string form.
-    fn process(&self, path_overload: Option<&[Vec<u8>]>);
+    fn process(&self, path_overload: Option<&[SmallVec<[u8; 5]>]>);
 }
 
 /// A router path is a string path (e.g. "some/router/to/somewhere") that is split at '/' and each part is represented as a series of bytes.
 ///
 #[derive(Default, Debug)]
 pub struct RouterPath {
-    parts: Vec<Vec<u8>>,
+    parts: SmallVec<[SmallVec<[u8; 5]>; 10]>,
 }
 
-impl From<Vec<Vec<u8>>> for RouterPath {
-    fn from(data: Vec<Vec<u8>>) -> Self {
+impl From<SmallVec<[SmallVec<[u8; 5]>; 10]>> for RouterPath {
+    fn from(data: SmallVec<[SmallVec<[u8; 5]>; 10]>) -> Self {
         Self { parts: data }
     }
 }
@@ -30,7 +31,8 @@ impl From<&str> for RouterPath {
     fn from(path: &str) -> Self {
         let parts = path.split('/');
 
-        let parts: Vec<Vec<u8>> = parts.map(|part| part.as_bytes().to_vec()).collect();
+        let parts: SmallVec<[SmallVec<[u8; 5]>; 10]> =
+            parts.map(|part| SmallVec::from(part.as_bytes())).collect();
 
         parts.into()
     }
@@ -50,8 +52,8 @@ impl From<&str> for RouterPath {
 #[derive(Default, Debug)]
 pub struct Router {
     endpoint: Option<Box<Endpoint>>,
-    matches: Vec<u8>,
-    routers: Vec<Router>,
+    matches: SmallVec<[u8; 20]>,
+    routers: SmallVec<[Box<Router>; 5]>,
 }
 
 impl Router {
@@ -127,10 +129,10 @@ impl Router {
                 let next_router = &mut current_router.routers[match_index];
                 current_router = next_router;
             } else {
-                let new_router = Router::default();
-                current_router.matches.append(&mut part.clone());
+                current_router.matches.extend_from_slice(&part);
                 current_router.matches.push(0);
 
+                let new_router = Box::new(Router::default());
                 current_router.routers.push(new_router);
 
                 let new_router_index = current_router.routers.len() - 1;
