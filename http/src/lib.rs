@@ -133,8 +133,6 @@ impl Response {
             );
         }
 
-        head.extend_from_slice(b"\r\n");
-
         head
     }
 }

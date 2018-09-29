@@ -78,6 +78,8 @@ impl HttpRouteInfo {
     /// Respond with a 202 ok with the given body of content
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
         self.writer.write(&static_text_head)?;
+        self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
+        self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
         self.writer.write(b"\r\n")?;
 
@@ -86,6 +88,8 @@ impl HttpRouteInfo {
 
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
         self.writer.write(&static_icon_head)?;
+        self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
+        self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
         Ok(())
     }
