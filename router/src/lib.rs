@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::panic::RefUnwindSafe;
 
-pub trait Endpoint<T: Debug, R>: Debug + Send + Sync {
+pub trait Endpoint<T: Debug, R>: Debug + Send + Sync + RefUnwindSafe{
     /// Strict matching will only match on perfect matches
     /// Setting this to false will allow paths that only match at the start to still match if no more precise route is available
     fn use_strict_path_matching(&self) -> bool {
@@ -178,6 +179,7 @@ impl<T: Debug, R> Router<T, R> {
     /// Returns `None` if no route could be found
     pub fn route(&self, path: impl Into<RouterPath>, data: T) -> Option<R> {
         let path = path.into();
+
 
         let mut current_router = self;
 
