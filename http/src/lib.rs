@@ -109,7 +109,7 @@ impl RequestBuilder {
 }
 
 /// HTTP response
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Response {
     headers: Headers,
     /// Code such as 404 or 200
@@ -119,6 +119,14 @@ pub struct Response {
 }
 
 impl Response {
+    pub fn with_code(code: &str) -> Self {
+        Self {
+            headers: Headers::default(),
+            code: code.to_string(),
+            body: Vec::new()
+        }
+    }
+
     pub fn body(&self) -> &Vec<u8> {
         &self.body
     }
@@ -137,12 +145,17 @@ impl Response {
     }
 }
 
-#[derive(Default)]
 pub struct ResponseBuilder {
     response: Response,
 }
 
 impl ResponseBuilder {
+    pub fn ok_200() -> Self {
+        Self {
+            response: Response::with_code("200 OK")
+        }
+    }
+
     pub fn header(&mut self, name: &str, value: &str) -> &mut Self {
         self.response
             .headers

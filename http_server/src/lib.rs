@@ -43,7 +43,7 @@ pub struct HttpRouteInfo {
 
 lazy_static! {
     pub static ref static_text_head: Vec<u8> = {
-        let mut response_builder = ResponseBuilder::default();
+        let mut response_builder = ResponseBuilder::ok_200();
         response_builder
         .header("Content-Type", "text/html charset=UTF-8")
         .header("Content-Encoding", "gzip")
@@ -54,7 +54,7 @@ lazy_static! {
     };
 
     pub static ref static_icon_head: Vec<u8> = {
-        let mut response_builder = ResponseBuilder::default();
+        let mut response_builder = ResponseBuilder::ok_200();
         response_builder
         .header("Content-Type", "image/x-icon")
         .header("Content-Encoding", "gzip")
@@ -80,7 +80,6 @@ impl HttpRouteInfo {
         self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
         self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
-        self.writer.write(b"\r\n")?;
 
         Ok(())
     }
@@ -153,7 +152,7 @@ impl HttpServer {
         mut stream: TcpStream,
         router: Arc<Router<HttpRouteInfo, ()>>,
     ) -> Result<(), HttpServerError> {
-        stream.set_read_timeout(Some(Duration::from_secs(5)));
+        stream.set_read_timeout(Some(Duration::from_secs(5)))?;
 
         let mut buffered_stream = BufReader::new(stream.try_clone()?);
 
