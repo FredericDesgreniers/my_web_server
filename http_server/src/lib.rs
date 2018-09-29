@@ -49,7 +49,6 @@ lazy_static! {
         .header("Content-Encoding", "gzip")
         .header("Cache-Control", "max-age=1800")
         .header("Cache-Control", "public")
-        .header("Connection", "close");
 
         response_builder.build().head_bytes()
     };
@@ -61,7 +60,6 @@ lazy_static! {
         .header("Content-Encoding", "gzip")
         .header("Cache-Control", "max-age=18000")
         .header("Cache-Control", "public")
-        .header("Connection", "close");
 
         response_builder.build().head_bytes()
     };
