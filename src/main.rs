@@ -66,7 +66,7 @@ fn main() {
         );
         server.add_route(
             "/favicon.ico",
-            StaticPage(gzip(include_bytes!("../static/favicon.ico"))),
+            StaticIcon(gzip(include_bytes!("../static/favicon.ico"))),
         );
 
         let result = server.listen(20);
