@@ -8,9 +8,7 @@ pub trait Endpoint: Debug {
         true
     }
 
-    //TODO Maybe change `path_overload` to provide a string(s) instead of `&[Vec<u8>]`
-    // The reason this provides a `&[Vec<u8>]` instead of either a `&[String]` or `String` is to minimize overhead when calling. However, it can be argued that any endpoint that wants this will want it as string form.
-    fn process(&self, path_overload: Option<&[SmallVec<[u8; 5]>]>);
+    fn process(&self, path_overload: Vec<String>);
 }
 
 /// A router path is a string path (e.g. "some/router/to/somewhere") that is split at '/' and each part is represented as a series of bytes.
@@ -166,12 +164,17 @@ impl Router {
         if let Some(endpoint) = &current_router.endpoint {
             if endpoint.use_strict_path_matching() {
                 if !failed_to_match {
-                    endpoint.process(None);
+                    endpoint.process(Vec::new());
                 }
             } else if let Some(last_path_index) = last_path_index {
-                endpoint.process(Some(&path.parts[last_path_index..]));
+                endpoint.process(
+                    path.parts[last_path_index..]
+                        .into_iter()
+                        .map(|part| String::from_utf8(part.to_vec()).unwrap())
+                        .collect(),
+                );
             } else {
-                endpoint.process(None);
+                endpoint.process(Vec::new());
             }
         }
     }
