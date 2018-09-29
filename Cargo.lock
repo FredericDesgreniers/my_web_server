@@ -201,6 +201,7 @@ dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "minify 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pool 0.1.0",
+ "router 0.1.0",
 ]
 
 [[package]]
@@ -245,6 +246,7 @@ dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.0",
  "http_server 0.1.0",
+ "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "router 0.1.0",
 ]

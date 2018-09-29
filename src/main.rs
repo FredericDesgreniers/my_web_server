@@ -3,11 +3,12 @@
 #[macro_use]
 extern crate log;
 
-use core::time::Duration;
-use log::{Level, LevelFilter, Metadata, Record};
-use std::thread;
-
 use chrono::prelude::*;
+use core::time::Duration;
+use http_server::{compress_html, HttpRouteInfo};
+use log::{Level, LevelFilter, Metadata, Record};
+use router::{Endpoint, RoutedInfo};
+use std::thread;
 
 struct Logger;
 
@@ -28,6 +29,16 @@ impl log::Log for Logger {
 
 static LOGGER: Logger = Logger;
 
+/// Endpoint to server static content
+#[derive(Debug)]
+struct StaticPage(Vec<u8>);
+
+impl Endpoint<HttpRouteInfo, ()> for StaticPage {
+    fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) {
+        route_info.data.ok(&self.0).unwrap();
+    }
+}
+
 fn main() {
     log::set_logger(&LOGGER)
         .map(|()| log::set_max_level(LevelFilter::Info))
@@ -37,6 +48,11 @@ fn main() {
 
     loop {
         let mut server = http_server::HttpServer::create(80).unwrap();
+
+        server.add_route(
+            "/",
+            StaticPage(compress_html(include_str!("../static/landing_page.html"))),
+        );
 
         let result = server.listen();
 
