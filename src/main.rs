@@ -29,7 +29,7 @@ impl log::Log for Logger {
 
 static LOGGER: Logger = Logger;
 
-/// Endpoint to server static content
+/// Endpoint to serve static content
 #[derive(Debug)]
 struct StaticPage(Vec<u8>);
 
