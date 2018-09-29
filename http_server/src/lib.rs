@@ -1,11 +1,14 @@
 #![feature(try_from)]
 
 #[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
 extern crate failure;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use http::{Request, RequestBuilder, RequestType};
+use http::{Request, ResponseBuilder, RequestBuilder, RequestType};
 use router::{Endpoint, Router};
 use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
@@ -37,6 +40,32 @@ pub struct HttpRouteInfo {
     writer: TcpStream,
 }
 
+lazy_static! {
+    pub static ref static_text_head: Vec<u8> = {
+        let mut response_builder = ResponseBuilder::default();
+        response_builder
+        .header("Content-Type", "text/html charset=UTF-8")
+        .header("Content-Encoding", "gzip")
+        .header("Cache-Control", "max-age=1800")
+        .header("Cache-Control", "public")
+        .header("Connection", "close");
+
+        response_builder.build().head_bytes()
+    };
+
+    pub static ref static_icon_head: Vec<u8> = {
+        let mut response_builder = ResponseBuilder::default();
+        response_builder
+        .header("Content-Type", "image/x-icon")
+        .header("Content-Encoding", "gzip")
+        .header("Cache-Control", "max-age=18000")
+        .header("Cache-Control", "public")
+        .header("Connection", "close");
+
+        response_builder.build().head_bytes()
+    };
+}
+
 impl HttpRouteInfo {
     pub fn request(&self) -> &Request {
         &self.request
@@ -48,7 +77,7 @@ impl HttpRouteInfo {
 
     /// Respond with a 202 ok with the given body of content
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
+        self.writer.write(&static_text_head)?;
         self.writer.write(content)?;
         self.writer.write(b"\r\n")?;
 
@@ -56,8 +85,7 @@ impl HttpRouteInfo {
     }
 
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-
-        self.writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: image/x-icon\r\nContent-Encoding: gzip\r\nConnection:Close\r\n\r\n")?;
+        self.writer.write(&static_icon_head)?;
         self.writer.write(content)?;
         Ok(())
     }
