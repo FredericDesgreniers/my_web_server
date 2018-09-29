@@ -7,6 +7,8 @@ pub trait Endpoint: Debug {
         true
     }
 
+    //TODO Maybe change `path_overload` to provide a string(s) instead of `&[Vec<u8>]`
+    // The reason this provides a `&[Vec<u8>]` instead of either a `&[String]` or `String` is to minimize overhead when calling. However, it can be argued that any endpoint that wants this will want it as string form.
     fn process(&self, path_overload: Option<&[Vec<u8>]>);
 }
 
