@@ -36,6 +36,7 @@ struct StaticPage(Vec<u8>);
 impl Endpoint<HttpRouteInfo, ()> for StaticPage {
     fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) {
         route_info.data.ok(&self.0).unwrap();
+        println!("Static page requested!");
     }
 }
 
@@ -45,6 +46,7 @@ struct StaticIcon(Vec<u8>);
 impl Endpoint<HttpRouteInfo, ()> for StaticIcon {
     fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) -> () {
         route_info.data.icon(&self.0).unwrap();
+        println!("icon requested!");
     }
 }
 
@@ -60,8 +62,12 @@ fn main() {
 
         server.add_route(
             "/",
-            StaticPage(compress_html(include_str!("../static/landing_page.html"))));
-        server.add_route("/favicon.ico", StaticPage(gzip(include_bytes!("../static/favicon.ico"))));
+            StaticPage(compress_html(include_str!("../static/landing_page.html"))),
+        );
+        server.add_route(
+            "/favicon.ico",
+            StaticPage(gzip(include_bytes!("../static/favicon.ico"))),
+        );
 
         let result = server.listen();
 
