@@ -48,7 +48,7 @@ lazy_static! {
         .header("Content-Type", "text/html charset=UTF-8")
         .header("Content-Encoding", "gzip")
         .header("Cache-Control", "max-age=1800")
-        .header("Cache-Control", "public")
+        .header("Cache-Control", "public");
 
         response_builder.build().head_bytes()
     };
@@ -59,7 +59,7 @@ lazy_static! {
         .header("Content-Type", "image/x-icon")
         .header("Content-Encoding", "gzip")
         .header("Cache-Control", "max-age=18000")
-        .header("Cache-Control", "public")
+        .header("Cache-Control", "public");
 
         response_builder.build().head_bytes()
     };
