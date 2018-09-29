@@ -15,9 +15,12 @@ use std::sync::Arc;
 /// Minifies and gzips html
 pub fn compress_html(html: &str) -> Vec<u8> {
     let minified_content = minify::html::minify(html);
+    gzip(&minified_content.into_bytes())
+}
 
+pub fn gzip(data: &[u8]) -> Vec<u8> {
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-    encoder.write_all(minified_content.as_bytes()).unwrap();
+    encoder.write_all(data).unwrap();
     encoder.finish().unwrap()
 }
 
@@ -49,6 +52,13 @@ impl HttpRouteInfo {
         self.writer.write(content)?;
         self.writer.write(b"\r\n")?;
 
+        Ok(())
+    }
+
+    pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
+
+        self.writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: image/x-icon\r\nContent-Encoding: gzip\r\nConnection:Close\r\n\r\n")?;
+        self.writer.write(content)?;
         Ok(())
     }
 }
