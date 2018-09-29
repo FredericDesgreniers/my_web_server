@@ -4,11 +4,13 @@ use core::convert::TryFrom;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
+/// Contains (key, value) headers
 #[derive(Default, Debug)]
 pub struct Headers {
     headers: HashMap<String, String>,
 }
 
+/// HTTP request type
 #[derive(Debug, Copy, Clone)]
 pub enum RequestType {
     GET,
@@ -27,6 +29,7 @@ impl Display for RequestType {
 }
 
 impl TryFrom<&str> for RequestType {
+    // This is expected to fail, so we treat the error / result as an option
     type Error = ();
 
     fn try_from(from: &str) -> Result<Self, <Self as TryFrom<&str>>::Error> {
@@ -38,15 +41,22 @@ impl TryFrom<&str> for RequestType {
     }
 }
 
+/// HTTP request
 #[derive(Debug)]
 pub struct Request {
     request_type: RequestType,
+    /// This should either be an IP or resolve to one
     host: String,
+    /// Port to send the request too.
+    /// This is only relevant when constructed by sender
     port: usize,
+    /// Request path: e.g /home
     path: String,
+    /// Request headers
     headers: Headers,
 }
 
+/// Builds an HTTP request
 pub struct RequestBuilder {
     request: Request,
 }
@@ -87,14 +97,15 @@ impl RequestBuilder {
     }
 }
 
+/// HTTP response
 #[derive(Default, Debug)]
 pub struct Response {
     headers: Headers,
-    body: String,
+    body: Vec<u8>,
 }
 
 impl Response {
-    pub fn body(&self) -> &str {
+    pub fn body(&self) -> &Vec<u8> {
         &self.body
     }
 }
@@ -113,8 +124,8 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn body(&mut self, body: &str) -> &mut Self {
-        self.response.body = body.to_string();
+    pub fn body(&mut self, body: Vec<u8>) -> &mut Self {
+        self.response.body = body;
         self
     }
 
