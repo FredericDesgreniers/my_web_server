@@ -69,8 +69,7 @@ fn main() {
             StaticPage(gzip(include_bytes!("../static/favicon.ico"))),
         );
 
-        let result = server.listen();
-
+        let result = server.listen(20);
         if let Err(err) = result {
             error!(
                 "Server ended in error, starting it up again in 5 seconds. Error: {:?}",

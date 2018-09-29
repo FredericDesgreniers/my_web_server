@@ -14,6 +14,7 @@ use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
+use std::time::Duration;
 
 /// Minifies and gzips html
 pub fn compress_html(html: &str) -> Vec<u8> {
@@ -122,11 +123,11 @@ impl HttpServer {
     }
 
     /// Listen and respond to incoming http requests
-    pub fn listen(self) -> Result<(), HttpServerError> {
+    pub fn listen(self, worker_num: usize) -> Result<(), HttpServerError> {
         let HttpServer { listener, router } = self;
         let router = Arc::new(router);
 
-        let workers = pool::ThreadPool::new(10);
+        let workers = pool::ThreadPool::new(worker_num);
 
         for stream in listener.incoming() {
             let stream = stream?;
@@ -154,6 +155,8 @@ impl HttpServer {
         mut stream: TcpStream,
         router: Arc<Router<HttpRouteInfo, ()>>,
     ) -> Result<(), HttpServerError> {
+        stream.set_read_timeout(Some(Duration::from_secs(5)));
+
         let mut buffered_stream = BufReader::new(stream.try_clone()?);
 
         // First line of a request, normally in the format "GET / HTTP/1.1"
@@ -170,6 +173,8 @@ impl HttpServer {
         );
         request.path(path);
 
+        let mut persist = true;
+
         // Parse all the headers
         let mut line = String::new();
         loop {
@@ -182,6 +187,18 @@ impl HttpServer {
             if let Some(header_split_index) = line.find(":") {
                 let (name, value) = line.split_at(header_split_index);
                 let value = value[1..].trim();
+
+                match name.to_lowercase().trim() {
+                    "connection" => {
+                        match value.to_lowercase().trim(){
+                            "close" => {
+                                persist = false;
+                            }
+                            _ => ()
+                        }
+                    }
+                    _ => ()
+                }
 
                 request.header(name, value);
             }
@@ -203,6 +220,10 @@ impl HttpServer {
             stream.write(b"HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
             stream.write(&compress_html("Could not find resource"))?;
             stream.write(b"\r\n")?;
+        }
+
+        if persist {
+            Self::handle_connection(stream, router);
         }
 
         Ok(())
