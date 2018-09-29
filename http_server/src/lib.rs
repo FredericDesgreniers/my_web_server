@@ -221,7 +221,7 @@ impl HttpServer {
         }
 
         if persist {
-            Self::handle_connection(stream, router);
+            Self::handle_connection(stream, router)?;
         }
 
         Ok(())
