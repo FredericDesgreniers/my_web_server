@@ -4,8 +4,8 @@ mod worker;
 extern crate failure;
 extern crate core;
 
-use crossbeam as channel;
 use self::worker::{Worker, WorkerMessage, WorkerResult};
+use crossbeam as channel;
 use std::panic::UnwindSafe;
 
 #[derive(Debug, Fail)]
@@ -44,12 +44,12 @@ impl<T: FnOnce() + Send + 'static + UnwindSafe> ThreadPool<T> {
     }
 
     pub fn join(self) -> Result<Vec<WorkerResult>, PoolError> {
-
         for _ in 0..self.workers.len() {
             self.sender.send(WorkerMessage::Resign);
         }
 
-        self.workers.into_iter()
+        self.workers
+            .into_iter()
             .map(|worker| worker.join())
             .collect::<Result<Vec<WorkerResult>, PoolError>>()
     }

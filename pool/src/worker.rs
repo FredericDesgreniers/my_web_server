@@ -1,26 +1,26 @@
 use super::PoolError;
-use std::thread;
+use core::marker::PhantomData;
 use crossbeam::channel;
 use std::panic;
 use std::panic::UnwindSafe;
-use core::marker::PhantomData;
+use std::thread;
 
 /// Message sent to worker
 pub enum WorkerMessage<T> {
     Work(T),
-    Resign
+    Resign,
 }
 
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum WorkerResult {
     Panic,
-    Ok
+    Ok,
 }
 
 /// Worker manages a thread that does work
 pub struct Worker<T>
-    where
-        T: FnOnce() + Send + 'static + UnwindSafe,
+where
+    T: FnOnce() + Send + 'static + UnwindSafe,
 {
     join_handle: thread::JoinHandle<WorkerResult>,
     _t: PhantomData<T>,
@@ -29,7 +29,6 @@ pub struct Worker<T>
 impl<T: FnOnce() + Send + 'static + UnwindSafe> Worker<T> {
     pub fn spawn(receiver: channel::Receiver<WorkerMessage<T>>) -> Self {
         let join_handle = thread::spawn(move || {
-
             let mut panic_occurred = false;
 
             'msg_loop: while let Some(message) = receiver.recv() {
@@ -61,7 +60,9 @@ impl<T: FnOnce() + Send + 'static + UnwindSafe> Worker<T> {
     }
 
     pub fn join(self) -> Result<WorkerResult, PoolError> {
-        self.join_handle.join().map_err(|err| PoolError::CouldNotJoin(format!("{:?}", err)))
+        self.join_handle
+            .join()
+            .map_err(|err| PoolError::CouldNotJoin(format!("{:?}", err)))
     }
 }
 
@@ -72,7 +73,7 @@ mod tests {
     #[test]
     fn worker_lifetime() {
         let (s, r) = channel::unbounded();
-        let worker= Worker::<fn()>::spawn(r);
+        let worker = Worker::<fn()>::spawn(r);
 
         s.send(WorkerMessage::Resign);
         worker.join().unwrap();
@@ -81,7 +82,7 @@ mod tests {
     #[test]
     fn worker_work() {
         let (s, r) = channel::unbounded();
-        let worker= Worker::<fn()>::spawn(r);
+        let worker = Worker::<fn()>::spawn(r);
 
         s.send(WorkerMessage::Work(|| panic!("This should panic!")));
 
@@ -89,4 +90,3 @@ mod tests {
         assert_eq!(worker.join().unwrap(), WorkerResult::Panic);
     }
 }
-
