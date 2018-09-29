@@ -7,7 +7,19 @@ use std::fmt::{self, Display};
 /// Contains (key, value) headers
 #[derive(Default, Debug)]
 pub struct Headers {
-    headers: HashMap<String, String>,
+    headers: Vec<Header>,
+}
+
+pub type Header = (String, String);
+
+impl Headers {
+    pub fn add(&mut self, key: String, value: String) {
+        self.headers.push((key, value));
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item=&Header> {
+        self.headers.iter()
+    }
 }
 
 /// HTTP request type
@@ -87,8 +99,7 @@ impl RequestBuilder {
     pub fn header(&mut self, name: &str, value: &str) -> &mut Self {
         self.request
             .headers
-            .headers
-            .insert(name.to_string(), value.to_string());
+            .add(name.to_string(), value.to_string());
         self
     }
 
@@ -101,12 +112,30 @@ impl RequestBuilder {
 #[derive(Default, Debug)]
 pub struct Response {
     headers: Headers,
+    /// Code such as 404 or 200
+    code: String,
+    /// Response body
     body: Vec<u8>,
 }
 
 impl Response {
     pub fn body(&self) -> &Vec<u8> {
         &self.body
+    }
+    pub fn head_bytes(&self) -> Vec<u8> {
+        let mut head = Vec::new();
+
+        head.extend_from_slice(&format!("HTTP/1.1 {}\r\n", self.code).into_bytes());
+
+        for (name, value) in self.headers.iter() {
+            head.extend_from_slice(
+                &format!("{name}:{value}\r\n", name = name, value = value).into_bytes(),
+            );
+        }
+
+        head.extend_from_slice(b"\r\n");
+
+        head
     }
 }
 
@@ -119,11 +148,14 @@ impl ResponseBuilder {
     pub fn header(&mut self, name: &str, value: &str) -> &mut Self {
         self.response
             .headers
-            .headers
-            .insert(name.to_string(), value.to_string());
+            .add(name.to_string(), value.to_string());
         self
     }
 
+    pub fn code(&mut self, code: &str) -> &mut Self {
+        self.response.code = code.to_string();
+        self
+    }
     pub fn body(&mut self, body: Vec<u8>) -> &mut Self {
         self.response.body = body;
         self
