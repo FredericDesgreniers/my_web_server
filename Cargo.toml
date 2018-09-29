@@ -4,9 +4,10 @@ version = "0.1.0"
 authors = ["Frederic Desgreniers <fredericdesgreniers@gmail.com>"]
 edition = "2018"
 [workspace]
-members = ["http", "http_server", "pool"]
+members = ["http", "http_server", "pool", "router"]
 [dependencies]
 http = {path = "http"}
 http_server = {path = "http_server"}
 chrono = "0.4.6"
 log = "0.4.5"
+router = {path="router"}

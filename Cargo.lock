@@ -246,6 +246,7 @@ dependencies = [
  "http 0.1.0",
  "http_server 0.1.0",
  "log 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "router 0.1.0",
 ]
 
 [[package]]
@@ -364,6 +365,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "redox_syscall"
 version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "router"
+version = "0.1.0"
 
 [[package]]
 name = "rustc-demangle"
