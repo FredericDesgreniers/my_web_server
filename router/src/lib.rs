@@ -72,14 +72,15 @@ impl Router {
             let byte_to_match = self.matches[current_match_index];
 
             if byte_to_match == 0 {
-                // If we are at end of path boundary, check if path contains any else to match on
+                // If we are at end of path boundary, check if path contains anything else to match on
                 // If not, match is a success
                 if current_path_index >= path.len() {
                     match_result = Some(current_path);
                     break;
                 }
 
-                // On '0' byte, this means we passed a path boundary and we need to restart matching on the new path
+                // On '0' byte, this means we passed a path boundary and we need to restart matching on the next path
+                // We also need to reset the input path since the matching is starting from the start again
                 current_match_index += 1;
                 current_path_index = 0;
 
@@ -87,7 +88,7 @@ impl Router {
                 continue;
             }
 
-            // In the while condition, we allow `current_path_index` to go 1 past it's limit to see if theirs a 0 as a matching byte.else.
+            // In the while condition, we allow `current_path_index` to go 1 past it's limit to see if theirs a 0 as a matching byte.
             // This means that if their was no zero, we need to exit the loop right now to prevent out of bounds access
             if current_path_index > path.len() - 1 {
                 break;
