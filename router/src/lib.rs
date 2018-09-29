@@ -1,4 +1,3 @@
-use smallvec::SmallVec;
 use std::fmt::Debug;
 
 pub trait Endpoint: Debug {
@@ -15,11 +14,11 @@ pub trait Endpoint: Debug {
 ///
 #[derive(Default, Debug)]
 pub struct RouterPath {
-    parts: SmallVec<[SmallVec<[u8; 5]>; 10]>,
+    parts: Vec<Vec<u8>>,
 }
 
-impl From<SmallVec<[SmallVec<[u8; 5]>; 10]>> for RouterPath {
-    fn from(data: SmallVec<[SmallVec<[u8; 5]>; 10]>) -> Self {
+impl From<Vec<Vec<u8>>> for RouterPath {
+    fn from(data: Vec<Vec<u8>>) -> Self {
         Self { parts: data }
     }
 }
@@ -29,8 +28,8 @@ impl From<&str> for RouterPath {
     fn from(path: &str) -> Self {
         let parts = path.split('/');
 
-        let parts: SmallVec<[SmallVec<[u8; 5]>; 10]> =
-            parts.map(|part| SmallVec::from(part.as_bytes())).collect();
+        let parts: Vec<Vec<u8>> =
+            parts.map(|part| part.as_bytes().to_vec()).collect();
 
         parts.into()
     }
@@ -50,8 +49,8 @@ impl From<&str> for RouterPath {
 #[derive(Default, Debug)]
 pub struct Router {
     endpoint: Option<Box<Endpoint>>,
-    matches: SmallVec<[u8; 20]>,
-    routers: SmallVec<[Box<Router>; 5]>,
+    matches: Vec<u8>,
+    routers: Vec<Router>,
 }
 
 impl Router {
@@ -130,7 +129,7 @@ impl Router {
                 current_router.matches.extend_from_slice(&part);
                 current_router.matches.push(0);
 
-                let new_router = Box::new(Router::default());
+                let new_router = Router::default();
                 current_router.routers.push(new_router);
 
                 let new_router_index = current_router.routers.len() - 1;

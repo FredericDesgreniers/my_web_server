@@ -5,4 +5,3 @@ authors = ["Frederic Desgreniers <fredericdesgreniers@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-smallvec = "0.6.5"

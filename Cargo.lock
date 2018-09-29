@@ -369,9 +369,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "router"
 version = "0.1.0"
-dependencies = [
- "smallvec 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "rustc-demangle"
