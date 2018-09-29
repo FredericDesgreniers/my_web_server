@@ -3,29 +3,54 @@
 #[macro_use]
 extern crate failure;
 
-#[macro_use]
-extern crate lazy_static;
-
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use http::{RequestBuilder, RequestType};
+use http::{Request, RequestBuilder, RequestType};
+use router::{Endpoint, Router};
 use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::Arc;
 
-lazy_static! {
-    pub static ref landing_page: Vec<u8> = {
-        let content = include_str!("../../static/landing_page.html");
-        let minified_content = minify::html::minify(content);
+/// Minifies and gzips html
+pub fn compress_html(html: &str) -> Vec<u8> {
+    let minified_content = minify::html::minify(html);
 
-        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-        encoder.write_all(minified_content.as_bytes()).unwrap();
-        encoder.finish().unwrap()
-    };
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(minified_content.as_bytes()).unwrap();
+    encoder.finish().unwrap()
 }
 
+/// An http server that takes care of accepting connections and serving them with content
 pub struct HttpServer {
     listener: TcpListener,
+    router: Router<HttpRouteInfo, ()>,
+}
+
+/// Info that needs to be routed to an endpoint
+#[derive(Debug)]
+pub struct HttpRouteInfo {
+    request: Request,
+    writer: TcpStream,
+}
+
+impl HttpRouteInfo {
+    pub fn request(&self) -> &Request {
+        &self.request
+    }
+
+    pub fn writer(&mut self) -> &mut impl Write {
+        &mut self.writer
+    }
+
+    /// Respond with a 202 ok with the given body of content
+    pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
+        self.writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
+        self.writer.write(content)?;
+        self.writer.write(b"\r\n")?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Fail)]
@@ -50,17 +75,22 @@ impl HttpServer {
     pub fn create(port: usize) -> Result<Self, HttpServerError> {
         Ok(Self {
             listener: TcpListener::bind(&format!("0.0.0.0:{}", port))?,
+            router: Router::default(),
         })
     }
 
     /// Listen and respond to incoming http requests
-    pub fn listen(&mut self) -> Result<(), HttpServerError> {
+    pub fn listen(self) -> Result<(), HttpServerError> {
+        let HttpServer { listener, router } = self;
+        let router = Arc::new(router);
+
         let workers = pool::ThreadPool::new(10);
 
-        for stream in self.listener.incoming() {
+        for stream in listener.incoming() {
             let stream = stream?;
+            let router = router.clone();
             workers.do_work(move || {
-                if let Err(err) = Self::handle_connection(stream) {
+                if let Err(err) = Self::handle_connection(stream, router) {
                     println!("Error in request: {:?}", err);
                 }
             });
@@ -68,9 +98,20 @@ impl HttpServer {
         Ok(())
     }
 
+    pub fn add_route(
+        &mut self,
+        path: impl Into<router::RouterPath>,
+        endpoint: impl Endpoint<HttpRouteInfo, ()> + 'static,
+    ) {
+        self.router.add_path(path, endpoint);
+    }
+
     /// Handles an incoming connection
     /// Parses the request and responds
-    fn handle_connection(mut stream: TcpStream) -> Result<(), HttpServerError> {
+    fn handle_connection(
+        mut stream: TcpStream,
+        router: Arc<Router<HttpRouteInfo, ()>>,
+    ) -> Result<(), HttpServerError> {
         let mut buffered_stream = BufReader::new(stream.try_clone()?);
 
         // First line of a request, normally in the format "GET / HTTP/1.1"
@@ -107,14 +148,21 @@ impl HttpServer {
             line.clear();
         }
 
-        let _request = request.build();
+        let request = request.build();
 
-        //TODO remove hard-coded thing and move them to the api
-        //TODO Once more pages are created, a way to specify different pages should be available
+        // If no route is found, server with a generic 404 page.
+        if let None = router.route(
+            path,
+            HttpRouteInfo {
+                writer: stream.try_clone()?,
+                request,
+            },
+        ) {
+            stream.write(b"HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
+            stream.write(&compress_html("Could not find resource"))?;
+            stream.write(b"\r\n")?;
+        }
 
-        stream.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
-        stream.write(&landing_page)?;
-        stream.write(b"\r\n")?;
         Ok(())
     }
 }
