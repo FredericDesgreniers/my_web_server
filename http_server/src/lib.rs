@@ -1,10 +1,10 @@
 #![feature(try_from)]
 
 #[macro_use]
-extern crate lazy_static;
+extern crate failure;
 
 #[macro_use]
-extern crate failure;
+extern crate http;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
@@ -41,29 +41,20 @@ pub struct HttpRouteInfo {
     writer: TcpStream,
 }
 
-lazy_static! {
-    pub static ref static_text_head: Vec<u8> = {
-        let mut response_builder = ResponseBuilder::ok_200();
-        response_builder
-        .header("Content-Type", "text/html charset=UTF-8")
-        .header("Content-Encoding", "gzip")
-        .header("Cache-Control", "max-age=1800")
-        .header("Cache-Control", "public");
+const TEXT_HEADER_STR: &str =
+    response_head!("200 OK"
+        , header("Content-Type", "text/html charset=UTF-8")
+        , header("Content-Encoding", "gzip")
+        , header("Cache-Control", "max-age=1800")
+        , header("Cache-Control", "public"));
 
-        response_builder.build().head_bytes()
-    };
+const ICON_HEADER_STR: &str =
+    response_head!("200 OK"
+        , header("Content-Type", "image/x-icon")
+        , header("Content-Encoding", "gzip")
+        , header("Cache-Control", "max-age=1800")
+        , header("Cache-Control", "public"));
 
-    pub static ref static_icon_head: Vec<u8> = {
-        let mut response_builder = ResponseBuilder::ok_200();
-        response_builder
-        .header("Content-Type", "image/x-icon")
-        .header("Content-Encoding", "gzip")
-        .header("Cache-Control", "max-age=18000")
-        .header("Cache-Control", "public");
-
-        response_builder.build().head_bytes()
-    };
-}
 
 impl HttpRouteInfo {
     pub fn request(&self) -> &Request {
@@ -76,7 +67,7 @@ impl HttpRouteInfo {
 
     /// Respond with a 202 ok with the given body of content
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write(&static_text_head)?;
+        self.writer.write(TEXT_HEADER_STR.as_bytes())?;
         self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
         self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
@@ -85,7 +76,7 @@ impl HttpRouteInfo {
     }
 
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write(&static_icon_head)?;
+        self.writer.write(ICON_HEADER_STR.as_bytes())?;
         self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
         self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
