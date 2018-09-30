@@ -1,9 +1,21 @@
 use crate::{Headers};
 
+/// Generate an HTTP response header at compile time.
+/// Input takes the form
+/// ```
+/// response_head("101 SOME CODE",
+///     header("Content-Type", "text/html"),
+///     header("Content-Encoding", "gzip")
+/// )
+/// ```
+/// and returns a fully formed string containing all the information provided.
+///
+/// Using nightly const `as_bytes()` on the string allows a 100% compile time generation of headers
+///
 #[macro_export]
 macro_rules! response_head {
     ($code: expr, $(header($key:expr, $value: expr)),*) => {
-        concat!($code,"\r\n", $($key,":",$value,"\r\n",)*)
+        concat!("HTTP/1.1 ",$code,"\r\n", $($key,":",$value,"\r\n",)*)
     }
 
 }

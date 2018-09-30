@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![feature(const_str_as_bytes)]
 
 #[macro_use]
 extern crate failure;
@@ -8,7 +9,7 @@ extern crate http;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use http::{Request, ResponseBuilder, RequestBuilder, RequestType};
+use http::{Request, RequestBuilder, RequestType};
 use router::{Endpoint, Router};
 use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
@@ -41,19 +42,19 @@ pub struct HttpRouteInfo {
     writer: TcpStream,
 }
 
-const TEXT_HEADER_STR: &str =
+const TEXT_HEADER: &[u8] =
     response_head!("200 OK"
         , header("Content-Type", "text/html charset=UTF-8")
         , header("Content-Encoding", "gzip")
         , header("Cache-Control", "max-age=1800")
-        , header("Cache-Control", "public"));
+        , header("Cache-Control", "public")).as_bytes();
 
-const ICON_HEADER_STR: &str =
+const ICON_HEADER: &[u8] =
     response_head!("200 OK"
         , header("Content-Type", "image/x-icon")
         , header("Content-Encoding", "gzip")
         , header("Cache-Control", "max-age=1800")
-        , header("Cache-Control", "public"));
+        , header("Cache-Control", "public")).as_bytes();
 
 
 impl HttpRouteInfo {
@@ -67,7 +68,7 @@ impl HttpRouteInfo {
 
     /// Respond with a 202 ok with the given body of content
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write(TEXT_HEADER_STR.as_bytes())?;
+        self.writer.write(TEXT_HEADER)?;
         self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
         self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
@@ -76,7 +77,7 @@ impl HttpRouteInfo {
     }
 
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write(ICON_HEADER_STR.as_bytes())?;
+        self.writer.write(ICON_HEADER)?;
         self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
         self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
