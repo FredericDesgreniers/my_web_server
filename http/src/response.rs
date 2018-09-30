@@ -6,8 +6,8 @@ use crate::Headers;
 /// use http::response_head;
 ///
 /// response_head!("101 SOME CODE",
-///     header("Content-Type", "text/html"),
-///     header("Content-Encoding", "gzip")
+///     h("Content-Type" => "text/html"),
+///     h("Content-Encoding" => "gzip")
 /// );
 /// ```
 /// and returns a fully formed string containing all the information provided.
@@ -22,6 +22,21 @@ macro_rules! response_head {
 
 }
 
+/// Generates a response for various content types
+/// Gives back a `Vec<u8`
+///
+/// ```
+/// #![feature(const_str_as_bytes)]
+///
+/// use http::make_response;
+///
+/// let html = "<div>This is some content</div>";
+/// make_response!(HTML: "202 OK", html);
+///
+/// let icon_data = Vec::new();
+/// make_response!(ICON: "202 OK", icon_data);
+/// ```
+///
 #[macro_export]
 macro_rules! make_response {
     (HTML: $code:expr, $html:expr) => {{
