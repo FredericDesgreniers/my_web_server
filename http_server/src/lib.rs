@@ -8,8 +8,6 @@ extern crate failure;
 extern crate http;
 extern crate pool;
 
-use flate2::write::GzEncoder;
-use flate2::Compression;
 use http::{Request, RequestBuilder, RequestType};
 use pool::PoolError;
 use router::{Endpoint, Router};
@@ -18,18 +16,6 @@ use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
 use std::time::Duration;
-
-/// Minifies and gzips html
-pub fn compress_html(html: &str) -> Vec<u8> {
-    let minified_content = minify::html::minify(html);
-    gzip(&minified_content.into_bytes())
-}
-
-pub fn gzip(data: &[u8]) -> Vec<u8> {
-    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-    encoder.write_all(data).unwrap();
-    encoder.finish().unwrap()
-}
 
 /// An http server that takes care of accepting connections and serving them with content
 pub struct HttpServer {
@@ -98,7 +84,8 @@ impl HttpRouteInfo {
         ).as_bytes();
 
         self.writer.write_all(HEADER)?;
-        self.writer.write_all(&format!("Content-Length: {}\r\n\r\n", content.len()).into_bytes())?;
+        self.writer
+            .write_all(&format!("Content-Length: {}\r\n\r\n", content.len()).into_bytes())?;
         self.writer.write_all(content)?;
 
         Ok(())

@@ -22,6 +22,47 @@ macro_rules! response_head {
 
 }
 
+#[macro_export]
+macro_rules! make_response {
+    (HTML: $code:expr, $html:expr) => {{
+        use http::{compress_html, response_head};
+
+        const HEAD: &[u8] = response_head ! (
+    $code,
+    h("Content-Type" => "text/html charset=UTF-8"),
+    h("Content-Encoding" => "gzip"),
+    h("Cache-Control" => "max-age=1800"),
+    h("Cache-Control" => "public")
+    ).as_bytes();
+
+        let mut response = HEAD.to_vec();
+
+        let content = compress_html($html);
+
+        response.extend_from_slice(format!("Content-Length:{}\r\n\r\n", content.len()).as_bytes());
+        response.extend_from_slice(&content);
+
+        response
+    }};
+    (ICON: $code:expr, $icon:expr) => {{
+        use http::{compress_html, response_head};
+        const HEAD: &[u8] = response_head!(
+        "200 OK",
+        h("Content-Type" => "image/x-icon"),
+        h("Content-Encoding" => "gzip"),
+        h("Cache-Control" => "max-age=1800"),
+        h("Cache-Control" => "public")
+        ).as_bytes();
+
+        let mut response = HEAD.to_vec();
+
+        response.extend_from_slice(format!("Content-Length:{}\r\n\r\n", $icon.len()).as_bytes());
+        response.extend_from_slice(&$icon);
+
+        response
+    }};
+}
+
 /// HTTP response
 #[derive(Debug)]
 pub struct Response {

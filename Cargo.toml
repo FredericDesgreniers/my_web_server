@@ -3,8 +3,18 @@ name = "milton"
 version = "0.1.0"
 authors = ["Frederic Desgreniers <fredericdesgreniers@gmail.com>"]
 edition = "2018"
+build = "pre_build.rs"
+
 [workspace]
 members = ["http", "http_server", "pool", "router"]
+
+[build-dependencies]
+minify = "1.1.1"
+flate2 = {version="1.0.2", features=["rust_backend"], default-features=false}
+walkdir = "2.2.5"
+http = {path = "http"}
+rayon = "1.0.2"
+
 [dependencies]
 http = {path = "http"}
 http_server = {path = "http_server"}

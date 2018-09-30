@@ -229,20 +229,16 @@ impl<T: Debug, R> Router<T, R> {
         if let Some(endpoint_404) = &self.endpoint_404 {
             let overload = match last_path_index {
                 None => Vec::new(),
-                Some(last_path_index) => {
-                    path.parts[last_path_index..]
-                        .into_iter()
-                        .map(|part| String::from_utf8(part.to_vec()).unwrap())
-                        .collect()
-                }
+                Some(last_path_index) => path.parts[last_path_index..]
+                    .into_iter()
+                    .map(|part| String::from_utf8(part.to_vec()).unwrap())
+                    .collect(),
             };
 
-            return Some(
-                endpoint_404.process(RoutedInfo {
-                    data,
-                    path_overload: overload
-                }),
-            );
+            return Some(endpoint_404.process(RoutedInfo {
+                data,
+                path_overload: overload,
+            }));
         }
 
         None

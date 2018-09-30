@@ -9,6 +9,4 @@ http = {path = "../http"}
 failure = "0.1.2"
 pool = {path = "../pool"}
 lazy_static = "1.1.0"
-minify = "1.1.1"
-flate2 = {version="1.0.2", features=["rust_backend"], default-features=false}
 router = {path="../router"}

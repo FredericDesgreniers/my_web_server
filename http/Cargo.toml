@@ -5,4 +5,6 @@ authors = ["Frederic Desgreniers <fredericdesgreniers@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+minify = "1.1.1"
+flate2 = {version="1.0.2", features=["rust_backend"], default-features=false}
 failure = "0.1.2"

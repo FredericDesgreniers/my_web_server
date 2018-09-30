@@ -1,13 +1,19 @@
+#![feature(const_str_as_bytes)]
 #![feature(nll)]
 
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate http;
+
 use chrono::prelude::*;
 use core::time::Duration;
-use http_server::{compress_html, gzip, HttpRouteInfo};
+use http::{compress_html, gzip};
+use http_server::HttpRouteInfo;
 use log::{Level, LevelFilter, Metadata, Record};
 use router::{Endpoint, RoutedInfo};
+use std::io::Write;
 use std::thread;
 
 struct Logger;
@@ -30,19 +36,11 @@ impl log::Log for Logger {
 static LOGGER: Logger = Logger;
 
 /// Endpoint to serve static content
-struct StaticPage(Vec<u8>);
+struct StaticResource(Vec<u8>);
 
-impl Endpoint<HttpRouteInfo, ()> for StaticPage {
-    fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) {
-        route_info.data.ok(&self.0).unwrap();
-    }
-}
-
-struct StaticIcon(Vec<u8>);
-
-impl Endpoint<HttpRouteInfo, ()> for StaticIcon {
-    fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) -> () {
-        route_info.data.icon(&self.0).unwrap();
+impl Endpoint<HttpRouteInfo, ()> for StaticResource {
+    fn process(&self, mut route_info: RoutedInfo<HttpRouteInfo>) {
+        route_info.data.writer().write_all(&self.0).unwrap();
     }
 }
 
@@ -72,11 +70,11 @@ fn main() {
 
         server.add_route(
             "/",
-            StaticPage(compress_html(include_str!("../static/landing_page.html"))),
+            StaticResource(include_bytes!("../static_out/landing_page_html.http").to_vec()),
         );
         server.add_route(
             "/favicon.ico",
-            StaticIcon(gzip(include_bytes!("../static/favicon.ico"))),
+            StaticResource(include_bytes!("../static_out/favicon_ico.http").to_vec()),
         );
 
         server.router_mut().set_endpoint_404(Page404::create());
