@@ -57,10 +57,10 @@ impl HttpRouteInfo {
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
         const HEADER: &[u8] = response_head!(
             "200 OK",
-            header("Content-Type", "text/html charset=UTF-8"),
-            header("Content-Encoding", "gzip"),
-            header("Cache-Control", "max-age=1800"),
-            header("Cache-Control", "public")
+            h("Content-Type" => "text/html charset=UTF-8"),
+            h("Content-Encoding" =>"gzip"),
+            h("Cache-Control" => "max-age=1800"),
+            h("Cache-Control" => "public")
         ).as_bytes();
 
         self.writer.write_all(HEADER)?;
@@ -74,10 +74,10 @@ impl HttpRouteInfo {
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
         const HEADER: &[u8] = response_head!(
             "200 OK",
-            header("Content-Type", "image/x-icon"),
-            header("Content-Encoding", "gzip"),
-            header("Cache-Control", "max-age=1800"),
-            header("Cache-Control", "public")
+            h("Content-Type" => "image/x-icon"),
+            h("Content-Encoding" => "gzip"),
+            h("Cache-Control" => "max-age=1800"),
+            h("Cache-Control" => "public")
         ).as_bytes();
 
         self.writer.write_all(HEADER)?;
@@ -90,11 +90,11 @@ impl HttpRouteInfo {
     pub fn not_found_404(mut self, content: &[u8]) -> Result<(), HttpServerError> {
         const HEADER: &[u8] = response_head!(
             "404 NOT FOUND",
-            header("Content-Type", "text/html charset=UTF-8"),
-            header("Content-Encoding", "gzip"),
-            header("Cache-Control", "max-age=1800"),
-            header("Cache-Control", "public"),
-            header("Connection", "Close")
+            h("Content-Type" => "text/html charset=UTF-8"),
+            h("Content-Encoding" => "gzip"),
+            h("Cache-Control" => "max-age=1800"),
+            h("Cache-Control" => "public"),
+            h("Connection" => "Close")
         ).as_bytes();
 
         self.writer.write_all(HEADER)?;

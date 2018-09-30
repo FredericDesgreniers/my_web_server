@@ -16,7 +16,7 @@ use crate::Headers;
 ///
 #[macro_export]
 macro_rules! response_head {
-    ($code: expr, $(header($key:expr, $value: expr)),*) => {
+    ($code: expr, $(h($key:expr => $value: expr)),*) => {
         concat!("HTTP/1.1 ",$code,"\r\n", $($key,":",$value,"\r\n",)*)
     }
 
