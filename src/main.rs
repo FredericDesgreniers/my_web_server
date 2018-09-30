@@ -30,7 +30,6 @@ impl log::Log for Logger {
 static LOGGER: Logger = Logger;
 
 /// Endpoint to serve static content
-#[derive(Debug)]
 struct StaticPage(Vec<u8>);
 
 impl Endpoint<HttpRouteInfo, ()> for StaticPage {
@@ -39,12 +38,25 @@ impl Endpoint<HttpRouteInfo, ()> for StaticPage {
     }
 }
 
-#[derive(Debug)]
 struct StaticIcon(Vec<u8>);
 
 impl Endpoint<HttpRouteInfo, ()> for StaticIcon {
     fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) -> () {
         route_info.data.icon(&self.0).unwrap();
+    }
+}
+
+struct Page404(Vec<u8>);
+
+impl Page404 {
+    pub fn create() -> Self {
+        Page404(compress_html("Could not find page"))
+    }
+}
+
+impl Endpoint<HttpRouteInfo, ()> for Page404 {
+    fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) -> () {
+        route_info.data.not_found_404(&self.0).unwrap();
     }
 }
 
@@ -66,6 +78,8 @@ fn main() {
             "/favicon.ico",
             StaticIcon(gzip(include_bytes!("../static/favicon.ico"))),
         );
+
+        server.router_mut().set_endpoint_404(Page404::create());
 
         let result = server.listen(20);
         if let Err(err) = result {

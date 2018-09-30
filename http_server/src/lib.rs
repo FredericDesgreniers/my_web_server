@@ -1,4 +1,4 @@
-#![feature(try_from)]
+#![feature(try_from, nll)]
 #![feature(const_str_as_bytes)]
 
 #[macro_use]
@@ -44,22 +44,6 @@ pub struct HttpRouteInfo {
     writer: TcpStream,
 }
 
-const TEXT_HEADER: &[u8] = response_head!(
-    "200 OK",
-    header("Content-Type", "text/html charset=UTF-8"),
-    header("Content-Encoding", "gzip"),
-    header("Cache-Control", "max-age=1800"),
-    header("Cache-Control", "public")
-).as_bytes();
-
-const ICON_HEADER: &[u8] = response_head!(
-    "200 OK",
-    header("Content-Type", "image/x-icon"),
-    header("Content-Encoding", "gzip"),
-    header("Cache-Control", "max-age=1800"),
-    header("Cache-Control", "public")
-).as_bytes();
-
 impl HttpRouteInfo {
     pub fn request(&self) -> &Request {
         &self.request
@@ -71,21 +55,52 @@ impl HttpRouteInfo {
 
     /// Respond with a 202 ok with the given body of content
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write_all(TEXT_HEADER)?;
+        const HEADER: &[u8] = response_head!(
+            "200 OK",
+            header("Content-Type", "text/html charset=UTF-8"),
+            header("Content-Encoding", "gzip"),
+            header("Cache-Control", "max-age=1800"),
+            header("Cache-Control", "public")
+        ).as_bytes();
+
+        self.writer.write_all(HEADER)?;
         self.writer
-            .write_all(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
-        self.writer.write_all(b"\r\n")?;
+            .write_all(&format!("Content-Length: {}\r\n\r\n", content.len()).into_bytes())?;
         self.writer.write_all(content)?;
 
         Ok(())
     }
 
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write_all(ICON_HEADER)?;
+        const HEADER: &[u8] = response_head!(
+            "200 OK",
+            header("Content-Type", "image/x-icon"),
+            header("Content-Encoding", "gzip"),
+            header("Cache-Control", "max-age=1800"),
+            header("Cache-Control", "public")
+        ).as_bytes();
+
+        self.writer.write_all(HEADER)?;
         self.writer
-            .write_all(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
-        self.writer.write_all(b"\r\n")?;
+            .write_all(&format!("Content-Length: {}\r\n\r\n", content.len()).into_bytes())?;
         self.writer.write_all(content)?;
+        Ok(())
+    }
+
+    pub fn not_found_404(mut self, content: &[u8]) -> Result<(), HttpServerError> {
+        const HEADER: &[u8] = response_head!(
+            "404 NOT FOUND",
+            header("Content-Type", "text/html charset=UTF-8"),
+            header("Content-Encoding", "gzip"),
+            header("Cache-Control", "max-age=1800"),
+            header("Cache-Control", "public"),
+            header("Connection", "Close")
+        ).as_bytes();
+
+        self.writer.write_all(HEADER)?;
+        self.writer.write_all(&format!("Content-Length: {}\r\n\r\n", content.len()).into_bytes())?;
+        self.writer.write_all(content)?;
+
         Ok(())
     }
 }
@@ -147,15 +162,19 @@ impl HttpServer {
         self.router.add_path(path, endpoint);
     }
 
+    pub fn router_mut(&mut self) -> &mut Router<HttpRouteInfo, ()> {
+        &mut self.router
+    }
+
     /// Handles an incoming connection
     /// Parses the request and responds
     fn handle_connection(
-        mut stream: TcpStream,
+        stream: TcpStream,
         router: &Arc<Router<HttpRouteInfo, ()>>,
     ) -> Result<(), HttpServerError> {
         stream.set_read_timeout(Some(Duration::from_secs(5)))?;
 
-        let mut buffered_stream = BufReader::new(stream.try_clone()?);
+        let mut buffered_stream = BufReader::new(&stream);
 
         // First line of a request, normally in the format "GET / HTTP/1.1"
         let mut request_line = String::new();
@@ -201,20 +220,13 @@ impl HttpServer {
 
         let request = request.build();
 
-        let route = router.route(
+        let _ = router.route(
             path,
             HttpRouteInfo {
                 writer: stream.try_clone()?,
                 request,
             },
         );
-
-        // If no route is found, server with a generic 404 page.
-        if route.is_none() {
-            stream.write_all(b"HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
-            stream.write_all(&compress_html("Could not find resource"))?;
-            stream.write_all(b"\r\n")?;
-        }
 
         if persist {
             Self::handle_connection(stream, router)?;

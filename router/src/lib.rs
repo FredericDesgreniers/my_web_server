@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::panic::RefUnwindSafe;
 
-pub trait Endpoint<T: Debug, R>: Debug + Send + Sync + RefUnwindSafe {
+pub trait Endpoint<T: Debug, R>: Send + Sync + RefUnwindSafe {
     /// Strict matching will only match on perfect matches
     /// Setting this to false will allow paths that only match at the start to still match if no more precise route is available
     fn use_strict_path_matching(&self) -> bool {
@@ -53,11 +53,11 @@ impl From<&str> for RouterPath {
 //TODO testing needs to be done to see if this is actually faster than a string array or hashmap alternative
 //TODO Since a byte comparison is made, it should be an easy simd candidate. Either it needs to verify that the compiler will generate simd for this or it should be implemented manually
 //TODO Would it be simpler to use chars instead of bytes here? Does it matter, is it faster?
-#[derive(Debug)]
 pub struct Router<T: Debug, R> {
     endpoint: Option<Box<Endpoint<T, R>>>,
     matches: Vec<u8>,
     routers: Vec<Router<T, R>>,
+    endpoint_404: Option<Box<Endpoint<T, R>>>,
 }
 
 // Debug can't be derived since T does not implement debug
@@ -67,6 +67,7 @@ impl<T: Debug, R> Default for Router<T, R> {
             endpoint: Default::default(),
             matches: Default::default(),
             routers: Default::default(),
+            endpoint_404: None,
         }
     }
 }
@@ -173,6 +174,10 @@ impl<T: Debug, R> Router<T, R> {
         current_router.endpoint = Some(Box::new(endpoint));
     }
 
+    pub fn set_endpoint_404(&mut self, endpoint: impl Endpoint<T, R> + 'static) {
+        self.endpoint_404 = Some(Box::new(endpoint));
+    }
+
     /// Attempt to route a query to an endpoint
     /// Returns `Some(result)` if a route was found
     /// Returns `None` if no route could be found
@@ -219,6 +224,25 @@ impl<T: Debug, R> Router<T, R> {
                     path_overload: Vec::new(),
                 }));
             }
+        }
+
+        if let Some(endpoint_404) = &self.endpoint_404 {
+            let overload = match last_path_index {
+                None => Vec::new(),
+                Some(last_path_index) => {
+                    path.parts[last_path_index..]
+                        .into_iter()
+                        .map(|part| String::from_utf8(part.to_vec()).unwrap())
+                        .collect()
+                }
+            };
+
+            return Some(
+                endpoint_404.process(RoutedInfo {
+                    data,
+                    path_overload: overload
+                }),
+            );
         }
 
         None

@@ -50,13 +50,11 @@ where
                     }
                 });
 
-
                 if let Ok(_) = result {
                     break;
                 } else {
                     panic_occurred = true;
                 }
-
             }
 
             if panic_occurred {
