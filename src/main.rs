@@ -79,7 +79,7 @@ fn main() {
 
         server.router_mut().set_endpoint_404(Page404::create());
 
-        let result = server.listen(20);
+        let result = server.listen(40);
         if let Err(err) = result {
             error!(
                 "Server ended in error, starting it up again in 5 seconds. Error: {:?}",
