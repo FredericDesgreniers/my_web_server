@@ -9,13 +9,20 @@ use walkdir::WalkDir;
 
 fn main() {
 
+    // Clean up from last build
     remove_dir_all("./static_out");
     create_dir_all("./static_out");
+
+    // Currently, this does not respect sub-directory paths, so everything is outputed to the same directory level.
+    // Eventually, this will need to be changed to support more complex static file organization
 
     for entry in WalkDir::new("./static") {
         let entry = entry.unwrap();
         if entry.file_type().is_file() {
             let name = entry.file_name().to_str().unwrap();
+
+            // The file extension tells us how to handle the files
+            // For example, html is minified and then gzipped, while icons are straight up gzipped
             if let Some(index) = name.rfind('.') {
 				let (name, extension) = name.split_at(index);
                 let output = match extension.trim() {
@@ -38,6 +45,7 @@ fn main() {
                 };
 
 				if let Some(output) = output {
+                    //TODO Change this to not map out everything in the same directory
                     let path = format!("./static_out/{}_{}.http", name, &extension[1..]);
 					let mut file_out = File::create(path).unwrap();
                     file_out.write_all(&output).unwrap();
@@ -50,7 +58,7 @@ fn main() {
     }
 }
 
-/// Minifies and gzips html
+/// Compress html to the minimum possible size
 pub fn compress_html(html: &str) -> Vec<u8> {
     let minified_content = minify::html::minify(html);
     gzip(&minified_content.into_bytes())
