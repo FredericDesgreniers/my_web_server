@@ -2,7 +2,7 @@ use super::PoolError;
 use core::marker::PhantomData;
 use crossbeam::channel;
 use std::panic;
-use std::panic::UnwindSafe;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::thread;
 
 /// Message sent to worker
@@ -18,23 +18,29 @@ pub enum WorkerResult {
 }
 
 /// Worker manages a thread that does work
-pub struct Worker<T>
+pub struct Worker<S, T>
 where
-    T: FnOnce() + Send + 'static + UnwindSafe,
+    T: FnOnce(&S) + Send + 'static + UnwindSafe,
+    S: Send + Sync + RefUnwindSafe + 'static,
 {
     join_handle: thread::JoinHandle<WorkerResult>,
     _t: PhantomData<T>,
+    _s: PhantomData<S>,
 }
 
-impl<T: FnOnce() + Send + 'static + UnwindSafe> Worker<T> {
-    pub fn spawn(receiver: channel::Receiver<WorkerMessage<T>>) -> Self {
+impl<S, T> Worker<S, T>
+where
+    S: Send + Sync + RefUnwindSafe + 'static,
+    T: FnOnce(&S) + Send + 'static + UnwindSafe,
+{
+    pub fn spawn(receiver: channel::Receiver<WorkerMessage<T>>, state: S) -> Self {
         let join_handle = thread::spawn(move || {
             let mut panic_occurred = false;
 
             'msg_loop: while let Some(message) = receiver.recv() {
                 match message {
                     WorkerMessage::Work(work) => {
-                        let result = panic::catch_unwind(|| work());
+                        let result = panic::catch_unwind(|| work(&state));
 
                         if result.is_err() {
                             panic_occurred = true;
@@ -56,6 +62,7 @@ impl<T: FnOnce() + Send + 'static + UnwindSafe> Worker<T> {
         Self {
             join_handle,
             _t: PhantomData::default(),
+            _s: PhantomData::default(),
         }
     }
 

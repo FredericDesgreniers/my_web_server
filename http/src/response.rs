@@ -1,4 +1,4 @@
-use crate::{Headers};
+use crate::Headers;
 
 /// Generate an HTTP response header at compile time.
 /// Input takes the form
@@ -35,7 +35,7 @@ impl Response {
         Self {
             headers: Headers::default(),
             code: code.to_string(),
-            body: Vec::new()
+            body: Vec::new(),
         }
     }
 
@@ -64,7 +64,7 @@ pub struct ResponseBuilder {
 impl ResponseBuilder {
     pub fn ok_200() -> Self {
         Self {
-            response: Response::with_code("200 OK")
+            response: Response::with_code("200 OK"),
         }
     }
 

@@ -6,7 +6,7 @@ extern crate core;
 
 use self::worker::{Worker, WorkerMessage, WorkerResult};
 use crossbeam as channel;
-use std::panic::UnwindSafe;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 
 #[derive(Debug, Fail)]
 pub enum PoolError {
@@ -15,24 +15,29 @@ pub enum PoolError {
 }
 
 /// Takes care of sending work to worker threads
-pub struct ThreadPool<T>
+pub struct ThreadPool<S, T>
 where
-    T: FnOnce() + Send + 'static + UnwindSafe,
+    T: FnOnce(&S) + Send + 'static + UnwindSafe,
+    S: RefUnwindSafe + UnwindSafe + Send + Sync + 'static,
 {
-    workers: Vec<Worker<T>>,
+    workers: Vec<Worker<S, T>>,
     sender: channel::Sender<WorkerMessage<T>>,
 }
 
-impl<T: FnOnce() + Send + 'static + UnwindSafe> ThreadPool<T> {
+impl<S, T> ThreadPool<S, T>
+where
+    S: Clone + RefUnwindSafe + UnwindSafe + Send + Sync + 'static,
+    T: FnOnce(&S) + Send + 'static + UnwindSafe,
+{
     /// Create a new ThreadPool
     /// `worker_num` number of worker threads created
-    pub fn new(worker_num: usize) -> Self {
+    pub fn new(worker_num: usize, state: S) -> Self {
         let mut workers = Vec::with_capacity(worker_num);
 
         let (sender, receiver) = channel::unbounded();
 
         for _ in 0..worker_num {
-            workers.push(Worker::spawn(receiver.clone()));
+            workers.push(Worker::spawn(receiver.clone(), state.clone()));
         }
 
         Self { workers, sender }

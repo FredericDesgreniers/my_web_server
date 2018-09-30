@@ -42,20 +42,21 @@ pub struct HttpRouteInfo {
     writer: TcpStream,
 }
 
-const TEXT_HEADER: &[u8] =
-    response_head!("200 OK"
-        , header("Content-Type", "text/html charset=UTF-8")
-        , header("Content-Encoding", "gzip")
-        , header("Cache-Control", "max-age=1800")
-        , header("Cache-Control", "public")).as_bytes();
+const TEXT_HEADER: &[u8] = response_head!(
+    "200 OK",
+    header("Content-Type", "text/html charset=UTF-8"),
+    header("Content-Encoding", "gzip"),
+    header("Cache-Control", "max-age=1800"),
+    header("Cache-Control", "public")
+).as_bytes();
 
-const ICON_HEADER: &[u8] =
-    response_head!("200 OK"
-        , header("Content-Type", "image/x-icon")
-        , header("Content-Encoding", "gzip")
-        , header("Cache-Control", "max-age=1800")
-        , header("Cache-Control", "public")).as_bytes();
-
+const ICON_HEADER: &[u8] = response_head!(
+    "200 OK",
+    header("Content-Type", "image/x-icon"),
+    header("Content-Encoding", "gzip"),
+    header("Cache-Control", "max-age=1800"),
+    header("Cache-Control", "public")
+).as_bytes();
 
 impl HttpRouteInfo {
     pub fn request(&self) -> &Request {
@@ -69,7 +70,8 @@ impl HttpRouteInfo {
     /// Respond with a 202 ok with the given body of content
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
         self.writer.write(TEXT_HEADER)?;
-        self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
+        self.writer
+            .write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
         self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
 
@@ -78,7 +80,8 @@ impl HttpRouteInfo {
 
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
         self.writer.write(ICON_HEADER)?;
-        self.writer.write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
+        self.writer
+            .write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
         self.writer.write(b"\r\n")?;
         self.writer.write(content)?;
         Ok(())
@@ -116,12 +119,12 @@ impl HttpServer {
         let HttpServer { listener, router } = self;
         let router = Arc::new(router);
 
-        let workers = pool::ThreadPool::new(worker_num);
+        let workers = pool::ThreadPool::new(worker_num, router);
 
         for stream in listener.incoming() {
             let stream = stream?;
-            let router = router.clone();
-            workers.do_work(move || {
+
+            workers.do_work(move |router: &Arc<Router<HttpRouteInfo, ()>>| {
                 if let Err(err) = Self::handle_connection(stream, router) {
                     println!("Error in request: {:?}", err);
                 }
@@ -142,7 +145,7 @@ impl HttpServer {
     /// Parses the request and responds
     fn handle_connection(
         mut stream: TcpStream,
-        router: Arc<Router<HttpRouteInfo, ()>>,
+        router: &Arc<Router<HttpRouteInfo, ()>>,
     ) -> Result<(), HttpServerError> {
         stream.set_read_timeout(Some(Duration::from_secs(5)))?;
 
@@ -178,15 +181,13 @@ impl HttpServer {
                 let value = value[1..].trim();
 
                 match name.to_lowercase().trim() {
-                    "connection" => {
-                        match value.to_lowercase().trim(){
-                            "close" => {
-                                persist = false;
-                            }
-                            _ => ()
+                    "connection" => match value.to_lowercase().trim() {
+                        "close" => {
+                            persist = false;
                         }
-                    }
-                    _ => ()
+                        _ => (),
+                    },
+                    _ => (),
                 }
 
                 request.header(name, value);

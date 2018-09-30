@@ -4,9 +4,8 @@
 pub mod response;
 pub mod request;
 
-pub use self::response::*;
 pub use self::request::*;
-
+pub use self::response::*;
 
 /// Contains (key, value) headers
 #[derive(Default, Debug)]
@@ -21,8 +20,7 @@ impl Headers {
         self.headers.push((key, value));
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=&Header> {
+    pub fn iter(&self) -> impl Iterator<Item = &Header> {
         self.headers.iter()
     }
 }
-

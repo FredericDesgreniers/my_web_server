@@ -1,4 +1,4 @@
-use crate::{Headers};
+use crate::Headers;
 
 use core::convert::TryFrom;
 use std::fmt::{self, Display};
@@ -88,4 +88,3 @@ impl RequestBuilder {
         self.request
     }
 }
-
