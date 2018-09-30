@@ -36,20 +36,27 @@ where
     pub fn spawn(receiver: channel::Receiver<WorkerMessage<T>>, state: S) -> Self {
         let join_handle = thread::spawn(move || {
             let mut panic_occurred = false;
-
-            'msg_loop: while let Some(message) = receiver.recv() {
-                match message {
-                    WorkerMessage::Work(work) => {
-                        let result = panic::catch_unwind(|| work(&state));
-
-                        if result.is_err() {
-                            panic_occurred = true;
+            loop {
+                let result = panic::catch_unwind(|| {
+                    'msg_loop: while let Some(message) = receiver.recv() {
+                        match message {
+                            WorkerMessage::Work(work) => {
+                                work(&state);
+                            }
+                            WorkerMessage::Resign => {
+                                return;
+                            }
                         }
                     }
-                    WorkerMessage::Resign => {
-                        break 'msg_loop;
-                    }
+                });
+
+
+                if let Ok(_) = result {
+                    break;
+                } else {
+                    panic_occurred = true;
                 }
+
             }
 
             if panic_occurred {
@@ -80,7 +87,7 @@ mod tests {
     #[test]
     fn worker_lifetime() {
         let (s, r) = channel::unbounded();
-        let worker = Worker::<fn()>::spawn(r);
+        let worker = Worker::<(), fn(&())>::spawn(r, ());
 
         s.send(WorkerMessage::Resign);
         worker.join().unwrap();
@@ -89,9 +96,9 @@ mod tests {
     #[test]
     fn worker_work() {
         let (s, r) = channel::unbounded();
-        let worker = Worker::<fn()>::spawn(r);
+        let worker = Worker::<(), fn(&())>::spawn(r, ());
 
-        s.send(WorkerMessage::Work(|| panic!("This should panic!")));
+        s.send(WorkerMessage::Work(|_| panic!("This should panic!")));
 
         s.send(WorkerMessage::Resign);
         assert_eq!(worker.join().unwrap(), WorkerResult::Panic);

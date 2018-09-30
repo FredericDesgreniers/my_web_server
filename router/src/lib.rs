@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::fmt::Display;
 use std::panic::RefUnwindSafe;
 
 pub trait Endpoint<T: Debug, R>: Debug + Send + Sync + RefUnwindSafe {

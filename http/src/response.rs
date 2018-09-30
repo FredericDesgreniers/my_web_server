@@ -3,10 +3,12 @@ use crate::Headers;
 /// Generate an HTTP response header at compile time.
 /// Input takes the form
 /// ```
-/// response_head("101 SOME CODE",
+/// use http::response_head;
+///
+/// response_head!("101 SOME CODE",
 ///     header("Content-Type", "text/html"),
 ///     header("Content-Encoding", "gzip")
-/// )
+/// );
 /// ```
 /// and returns a fully formed string containing all the information provided.
 ///

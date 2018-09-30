@@ -66,15 +66,15 @@ mod tests {
 
     #[test]
     fn lifetime_test() {
-        let pool = ThreadPool::<fn()>::new(3);
+        let pool = ThreadPool::<(), fn(&())>::new(3, ());
         pool.join().unwrap();
     }
 
     #[test]
     fn work_test() {
-        let pool = ThreadPool::new(1);
+        let pool = ThreadPool::new(1, ());
 
-        pool.do_work(move || {
+        pool.do_work(move |_: &()| {
             panic!("This should panic!");
         });
 

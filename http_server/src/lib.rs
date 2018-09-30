@@ -6,10 +6,12 @@ extern crate failure;
 
 #[macro_use]
 extern crate http;
+extern crate pool;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use http::{Request, RequestBuilder, RequestType};
+use pool::PoolError;
 use router::{Endpoint, Router};
 use std::convert::TryFrom;
 use std::io::{BufRead, BufReader, Write};
@@ -69,21 +71,21 @@ impl HttpRouteInfo {
 
     /// Respond with a 202 ok with the given body of content
     pub fn ok(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write(TEXT_HEADER)?;
+        self.writer.write_all(TEXT_HEADER)?;
         self.writer
-            .write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
-        self.writer.write(b"\r\n")?;
-        self.writer.write(content)?;
+            .write_all(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
+        self.writer.write_all(b"\r\n")?;
+        self.writer.write_all(content)?;
 
         Ok(())
     }
 
     pub fn icon(mut self, content: &[u8]) -> Result<(), HttpServerError> {
-        self.writer.write(ICON_HEADER)?;
+        self.writer.write_all(ICON_HEADER)?;
         self.writer
-            .write(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
-        self.writer.write(b"\r\n")?;
-        self.writer.write(content)?;
+            .write_all(&format!("Content-Length: {}\r\n", content.len()).into_bytes())?;
+        self.writer.write_all(b"\r\n")?;
+        self.writer.write_all(content)?;
         Ok(())
     }
 }
@@ -96,6 +98,8 @@ pub enum HttpServerError {
     HttpMethodNotPresent,
     #[fail(display = "Path not present in request line")]
     PathNotPresent,
+    #[fail(display = "Thread pool error")]
+    ThreadPoolError(PoolError),
 }
 
 impl From<std::io::Error> for HttpServerError {
@@ -130,6 +134,8 @@ impl HttpServer {
                 }
             });
         }
+
+        workers.join().map_err(HttpServerError::ThreadPoolError)?;
         Ok(())
     }
 
@@ -176,18 +182,14 @@ impl HttpServer {
                 break;
             }
 
-            if let Some(header_split_index) = line.find(":") {
+            if let Some(header_split_index) = line.find(':') {
                 let (name, value) = line.split_at(header_split_index);
                 let value = value[1..].trim();
 
-                match name.to_lowercase().trim() {
-                    "connection" => match value.to_lowercase().trim() {
-                        "close" => {
-                            persist = false;
-                        }
-                        _ => (),
-                    },
-                    _ => (),
+                if "connection" == name.to_lowercase().trim()
+                    && "close" == value.to_lowercase().trim()
+                {
+                    persist = false;
                 }
 
                 request.header(name, value);
@@ -199,17 +201,19 @@ impl HttpServer {
 
         let request = request.build();
 
-        // If no route is found, server with a generic 404 page.
-        if let None = router.route(
+        let route = router.route(
             path,
             HttpRouteInfo {
                 writer: stream.try_clone()?,
                 request,
             },
-        ) {
-            stream.write(b"HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
-            stream.write(&compress_html("Could not find resource"))?;
-            stream.write(b"\r\n")?;
+        );
+
+        // If no route is found, server with a generic 404 page.
+        if route.is_none() {
+            stream.write_all(b"HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html charset=UTF-8\r\nContent-Encoding: gzip\r\nConnection: close\r\n\r\n")?;
+            stream.write_all(&compress_html("Could not find resource"))?;
+            stream.write_all(b"\r\n")?;
         }
 
         if persist {

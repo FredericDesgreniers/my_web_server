@@ -36,7 +36,6 @@ struct StaticPage(Vec<u8>);
 impl Endpoint<HttpRouteInfo, ()> for StaticPage {
     fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) {
         route_info.data.ok(&self.0).unwrap();
-        println!("Static page requested!");
     }
 }
 
@@ -46,7 +45,6 @@ struct StaticIcon(Vec<u8>);
 impl Endpoint<HttpRouteInfo, ()> for StaticIcon {
     fn process(&self, route_info: RoutedInfo<HttpRouteInfo>) -> () {
         route_info.data.icon(&self.0).unwrap();
-        println!("icon requested!");
     }
 }
 
